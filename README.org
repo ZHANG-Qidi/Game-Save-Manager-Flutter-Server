@@ -1,0 +1,11 @@
+* dart_application_saveload_manager_server
+
+- Compile command
+  #+begin_src bash
+# Windows
+dart compile exe .\bin\dart_application_saveload_manager_server.dart
+
+# Linux
+dart compile exe ./bin/dart_application_saveload_manager_server.dart
+  #+end_src
+
