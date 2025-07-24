@@ -1,0 +1,89 @@
+* 在 Steam Deck 上启用 SSH
+#+begin_src bash
+# 设置密码
+passwd
+# 启用 SSH 服务
+sudo systemctl start sshd
+sudo systemctl enable sshd
+# 查看 IP 地址
+ip a
+# 在电脑上连接 Steam Deck
+ssh deck@192.168.x.x
+#+end_src
+* 在 Steam Deck 上安装 screen
+#+begin_src bash
+# 解锁只读文件系统
+sudo steamos-readonly disable
+# 更新软件包数据库
+sudo pacman -Sy
+# 重新初始化密钥环
+sudo pacman-key --init
+# 重新导入默认密钥
+sudo pacman-key --populate
+# 安装 screen
+sudo pacman -S screen
+# 验证安装是否成功
+screen --version
+#+end_src
+* 在 Steam Deck 上设置自启动服务
+1. 用户级自启动服务
+   #+begin_src bash
+# 创建 systemd 服务文件
+mkdir -p ~/.config/systemd/user
+nano ~/.config/systemd/user/dart_application_saveload_manager_server.service
+
+# dart_application_saveload_manager_server.service
+[Unit]
+Description=Start dart_application_saveload_manager_server in screen
+After=network.target
+
+[Service]
+WorkingDirectory=/home/deck/Documents/SaveLoadManager
+ExecStart=/usr/bin/screen -AmdS dart_application_saveload_manager_server ./dart_application_saveload_manager_server
+Type=forking
+Restart=always
+
+[Install]
+WantedBy=default.target
+
+# 允许用户服务在启动时运行
+sudo loginctl enable-linger $(whoami)
+
+# 启用并启动服务
+systemctl --user daemon-reload
+systemctl --user enable dart_application_saveload_manager_server.service
+systemctl --user start dart_application_saveload_manager_server.service
+
+# 验证服务状态
+systemctl --user status dart_application_saveload_manager_server.service
+   #+end_src
+2. 系统级自启动服务
+   #+begin_src bash
+# 创建 systemd 服务文件
+sudo nano /etc/systemd/system/dart_application_saveload_manager_server.service
+
+# dart_application_saveload_manager_server.service
+[Unit]
+Description=Start dart_application_saveload_manager_server in screen
+After=network.target
+
+[Service]
+User=deck
+Group=deck
+WorkingDirectory=/home/deck/Documents/SaveLoadManager
+ExecStart=/usr/bin/screen -AmdS dart_application_saveload_manager_server ./dart_application_saveload_manager_server
+Type=forking
+Restart=always
+
+[Install]
+WantedBy=multi-user.target
+
+# 启用并启动服务
+sudo systemctl daemon-reexec
+sudo systemctl daemon-reload
+sudo systemctl enable dart_application_saveload_manager_server.service
+sudo systemctl start dart_application_saveload_manager_server.service
+
+# 验证服务状态
+sudo systemctl status dart_application_saveload_manager_server.service
+   #+end_src
