@@ -5,28 +5,9 @@ import 'saveload_core.dart';
 
 const staticFilesDir = 'web';
 void main() async {
-  await pathSeparatorGet();
-  final currentDir = Directory.current.path;
-  print('Current working directory: $currentDir');
-  final staticDir = Directory([currentDir, staticFilesDir].join(Platform.pathSeparator));
-  print('Static files directory: ${staticDir.absolute.path}');
-  if (!await staticDir.exists()) {
-    print('Warning: The static file directory does not exist! Please create:${staticDir.path}');
-  }
-  final server = await HttpServer.bind(InternetAddress.anyIPv4, 8080);
-  print('Server running on:');
-  print(' - Local:\nhttp://localhost:${server.port}');
-  final interfaces = await NetworkInterface.list();
-  final lanIPs = interfaces
-      .expand((interface) => interface.addresses)
-      .where((addr) => addr.type == InternetAddressType.IPv4 && !addr.isLoopback)
-      .map((addr) => addr.address)
-      .toList();
-  if (lanIPs.isNotEmpty) {
-    print(' - LAN:\n${lanIPs.map((ip) => 'http://$ip:${server.port}').join('\n')}');
-  } else {
-    print(' - LAN:    No available IPv4 addresses found');
-  }
+  final port = int.parse(Platform.environment['PORT'] ?? '8000');
+  final server = await HttpServer.bind(InternetAddress.anyIPv4, port);
+  await infoPrint(server);
   await for (HttpRequest request in server) {
     // addCorsHeaders(request.response);
     if (request.method == 'OPTIONS') {
@@ -53,6 +34,29 @@ void main() async {
         ..write('Server error: ${e.toString()}')
         ..close();
     }
+  }
+}
+
+Future<void> infoPrint(HttpServer server) async {
+  final currentDir = Directory.current.path;
+  print('Current working directory: $currentDir');
+  final staticDir = Directory([currentDir, staticFilesDir].join(Platform.pathSeparator));
+  print('Static files directory: ${staticDir.absolute.path}');
+  if (!await staticDir.exists()) {
+    print('Warning: The static file directory does not exist! Please create:${staticDir.path}');
+  }
+  print('Server running on:');
+  print(' - Local:\nhttp://localhost:${server.port}');
+  final interfaces = await NetworkInterface.list();
+  final lanIPs = interfaces
+      .expand((interface) => interface.addresses)
+      .where((addr) => addr.type == InternetAddressType.IPv4 && !addr.isLoopback)
+      .map((addr) => addr.address)
+      .toList();
+  if (lanIPs.isNotEmpty) {
+    print(' - LAN:\n${lanIPs.map((ip) => 'http://$ip:${server.port}').join('\n')}');
+  } else {
+    print(' - LAN:    No available IPv4 addresses found');
   }
 }
 
@@ -186,70 +190,41 @@ Future<void> handleJsonrpc(HttpRequest request) async {
 }
 
 Future<dynamic> _executeMethod(String method, dynamic params) async {
-  dynamic result;
   switch (method) {
     case 'gameListFunc':
-      result = await gameListFunc();
-      break;
+      return await gameListFunc();
     case 'profileListFunc':
       final (profileList, folder, file) = await profileListFunc(params[0]);
-      result = [profileList, folder, file];
-      break;
+      return [profileList, folder, file];
     case 'saveListFunc':
-      result = await saveListFunc(game: params[0], profile: params[1]);
-      break;
+      return await saveListFunc(game: params[0], profile: params[1]);
     case 'gameDelete':
-      result = await gameDelete(params[0]);
-      break;
+      return await gameDelete(params[0]);
     case 'profileNew':
-      result = await profileNew(game: params[0], profile: params[1]);
-      break;
+      return await profileNew(game: params[0], profile: params[1]);
     case 'profileDelete':
-      result = await profileDelete(game: params[0], profile: params[1]);
-      break;
+      return await profileDelete(game: params[0], profile: params[1]);
     case 'saveNew':
-      result = await saveNew(
-        game: params[0],
-        profile: params[1],
-        saveFolder: params[2],
-        saveFile: params[3],
-        comment: params[4],
-      );
-      break;
+      return await saveNew(game: params[0], profile: params[1], saveFolder: params[2], saveFile: params[3], comment: params[4]);
     case 'saveDelete':
-      result = await saveDelete(
-        game: params[0],
-        profile: params[1],
-        saveFolder: params[2],
-        saveFile: params[3],
-        save: params[4],
-      );
-      break;
+      return await saveDelete(game: params[0], profile: params[1], saveFolder: params[2], saveFile: params[3], save: params[4]);
     case 'saveLoad':
-      result = await saveLoad(game: params[0], profile: params[1], saveFolder: params[2], saveFile: params[3], save: params[4]);
-      break;
+      return await saveLoad(game: params[0], profile: params[1], saveFolder: params[2], saveFile: params[3], save: params[4]);
     case 'pathSeparator':
-      result = Platform.pathSeparator;
-      break;
+      return Platform.pathSeparator;
     case 'listDirectoryFiles':
-      result = await listDirectoryFiles(params[0]);
-      break;
+      return await listDirectoryFiles(params[0]);
     case 'listDirectorySubDirectories':
-      result = await listDirectorySubDirectories(params[0]);
-      break;
+      return await listDirectorySubDirectories(params[0]);
     case 'getAppDataPath':
-      result = await getAppDataPath();
-      break;
+      return await getAppDataPath();
     case 'getRootDirectory':
-      result = await getRootDirectory();
-      break;
+      return await getRootDirectory();
     case 'gameNew':
-      result = await gameNew(game: params[0], saveFolder: params[1], saveFile: params[2]);
-      break;
+      return await gameNew(game: params[0], saveFolder: params[1], saveFile: params[2]);
     default:
       throw UnsupportedError('Function $method is not supported');
   }
-  return result;
 }
 
 void sendSuccessResponse(HttpResponse response, id, result) {

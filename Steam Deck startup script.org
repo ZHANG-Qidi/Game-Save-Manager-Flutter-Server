@@ -39,7 +39,9 @@ After=network.target
 
 [Service]
 WorkingDirectory=/home/deck/Documents/SaveLoadManager
+Environment=PORT=8000
 ExecStart=/usr/bin/screen -AmdS dart_application_saveload_manager_server ./dart_application_saveload_manager_server
+# ExecStart=/bin/bash -c 'PORT=8000 exec /usr/bin/screen -AmdS dart_application_saveload_manager_server ./dart_application_saveload_manager_server'
 Type=forking
 Restart=always
 
@@ -71,7 +73,9 @@ After=network.target
 User=deck
 Group=deck
 WorkingDirectory=/home/deck/Documents/SaveLoadManager
+Environment=PORT=8000
 ExecStart=/usr/bin/screen -AmdS dart_application_saveload_manager_server ./dart_application_saveload_manager_server
+# ExecStart=/bin/bash -c 'PORT=8000 exec /usr/bin/screen -AmdS dart_application_saveload_manager_server ./dart_application_saveload_manager_server'
 Type=forking
 Restart=always
 
