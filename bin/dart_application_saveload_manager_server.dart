@@ -2,6 +2,7 @@ import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
 import 'saveload_core.dart';
+import 'package:mime/mime.dart';
 
 const staticFilesDir = 'web';
 void main() async {
@@ -155,6 +156,12 @@ Future<void> handlePostRoutes(HttpRequest request, String path) async {
     case '/jsonrpc':
       await handleJsonrpc(request);
       break;
+    case '/download':
+      await handleDownload(request);
+      break;
+    case '/upload':
+      await handleUpload(request);
+      break;
     default:
       request.response
         ..statusCode = HttpStatus.notFound
@@ -247,4 +254,90 @@ void sendErrorResponse(HttpResponse response, int code, String message, [id]) {
       }),
     )
     ..close();
+}
+
+Future<void> handleDownload(HttpRequest request) async {
+  try {
+    final content = await utf8.decoder.bind(request).join();
+    final data = jsonDecode(content);
+    final String game = data['game'];
+    final String profile = data['profile'];
+    final String save = data['save'];
+    final Directory tempDir = Directory.systemTemp;
+    final String zipPath = '${tempDir.path}/$save.zip';
+    final savePath = ['SaveLoad', game, profile, save].join(Platform.pathSeparator);
+    await compressToZip(savePath, zipPath);
+    final File zipFile = File(zipPath);
+    final List<int> bytes = await zipFile.readAsBytes();
+    request.response
+      ..headers.set(HttpHeaders.contentTypeHeader, 'application/zip')
+      ..headers.set('Content-Disposition', 'attachment; filename="$save.zip"')
+      ..add(bytes);
+    await request.response.close();
+    await zipFile.delete();
+  } catch (e) {
+    request.response
+      ..statusCode = HttpStatus.internalServerError
+      ..write('Error: $e')
+      ..close();
+  }
+}
+
+Future<void> handleUpload(HttpRequest request) async {
+  try {
+    if (request.headers.contentType?.mimeType == 'multipart/form-data') {
+      final boundary = request.headers.contentType!.parameters['boundary']!;
+      final transformer = MimeMultipartTransformer(boundary);
+      final parts = await transformer.bind(request).toList();
+      String? jsonString;
+      List<int>? zipBytes;
+      String? fileName;
+      for (var part in parts) {
+        final headers = part.headers;
+        final contentDisposition = headers['content-disposition'] ?? '';
+        final content = await part.fold<List<int>>([], (a, b) => a..addAll(b));
+        if (contentDisposition.contains('name="file"')) {
+          final match = RegExp(r'filename="([^"]+)"').firstMatch(contentDisposition);
+          fileName = match != null ? match.group(1) : 'upload_${DateTime.now().millisecondsSinceEpoch}.zip';
+          zipBytes = content;
+          // print('Received zip file, size: ${zipBytes.length}');
+        } else if (contentDisposition.contains('name="params"')) {
+          jsonString = utf8.decode(content);
+          // print('Received parameter: $jsonString');
+        }
+      }
+      late String game;
+      late String profile;
+      if (jsonString != null) {
+        final Map<String, dynamic> params = json.decode(jsonString);
+        // print('Parameter content: $params');
+        game = params['game'];
+        profile = params['profile'];
+      }
+      if (zipBytes != null) {
+        final Directory tempDir = Directory.systemTemp;
+        final String zipPath = [tempDir.path, fileName].join(Platform.pathSeparator);
+        final zipFile = File(zipPath);
+        await zipFile.writeAsBytes(zipBytes);
+        final targetPath = ['SaveLoad', game, profile].join(Platform.pathSeparator);
+        await extractZip(zipPath, targetPath);
+        await zipFile.delete();
+        // print('The file has been saved to: $zipPath');
+      }
+      request.response
+        ..statusCode = HttpStatus.ok
+        ..write('Upload successful!')
+        ..close();
+    } else {
+      request.response
+        ..statusCode = HttpStatus.badRequest
+        ..write('Only accepts multipart/form-data format')
+        ..close();
+    }
+  } catch (e) {
+    request.response
+      ..statusCode = HttpStatus.internalServerError
+      ..write('Error: $e')
+      ..close();
+  }
 }
