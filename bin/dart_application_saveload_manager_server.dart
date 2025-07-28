@@ -219,10 +219,10 @@ Future<dynamic> _executeMethod(String method, dynamic params) async {
       return await saveLoad(game: params[0], profile: params[1], saveFolder: params[2], saveFile: params[3], save: params[4]);
     case 'pathSeparator':
       return Platform.pathSeparator;
-    case 'listDirectoryFiles':
-      return await listDirectoryFiles(params[0]);
-    case 'listDirectorySubDirectories':
-      return await listDirectorySubDirectories(params[0]);
+    case 'listDirectoryFilesNames':
+      return await listDirectoryFilesNames(params[0]);
+    case 'listDirectorySubDirectoriesNames':
+      return await listDirectorySubDirectoriesNames(params[0]);
     case 'getAppDataPath':
       return await getAppDataPath();
     case 'getRootDirectory':
@@ -314,19 +314,20 @@ Future<void> handleUpload(HttpRequest request) async {
         game = params['game'];
         profile = params['profile'];
       }
+      late String save;
       if (zipBytes != null) {
         final Directory tempDir = Directory.systemTemp;
         final String zipPath = [tempDir.path, fileName].join(Platform.pathSeparator);
         final zipFile = File(zipPath);
         await zipFile.writeAsBytes(zipBytes);
         final targetPath = ['SaveLoad', game, profile].join(Platform.pathSeparator);
-        await extractZip(zipPath, targetPath);
+        save = await extractZip(zipPath, targetPath);
         await zipFile.delete();
         // print('The file has been saved to: $zipPath');
       }
       request.response
         ..statusCode = HttpStatus.ok
-        ..write('Upload successful!')
+        ..write(save)
         ..close();
     } else {
       request.response
