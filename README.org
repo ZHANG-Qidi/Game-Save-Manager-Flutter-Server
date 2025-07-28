@@ -4,7 +4,11 @@
   #+begin_src bash
 # Windows
 dart compile exe .\bin\dart_application_saveload_manager_server.dart -o dart_application_saveload_manager_server.exe
+# Or
+dart compile exe .\bin\dart_application_saveload_manager_server_shelf.dart -o dart_application_saveload_manager_server.exe
 
 # Linux
 dart compile exe ./bin/dart_application_saveload_manager_server.dart -o dart_application_saveload_manager_server
+# Or
+dart compile exe ./bin/dart_application_saveload_manager_server_shelf.dart -o dart_application_saveload_manager_server
   #+end_src
