@@ -264,14 +264,15 @@ Future<void> handleDownload(HttpRequest request) async {
     final String profile = data['profile'];
     final String save = data['save'];
     final Directory tempDir = Directory.systemTemp;
-    final String zipPath = '${tempDir.path}/$save.zip';
+    final zipName = [game, profile, '$save.zip'].join('_');
+    final String zipPath = [tempDir.path, zipName].join(Platform.pathSeparator);
     final savePath = ['SaveLoad', game, profile, save].join(Platform.pathSeparator);
     await compressToZip(savePath, zipPath);
     final File zipFile = File(zipPath);
     final List<int> bytes = await zipFile.readAsBytes();
     request.response
       ..headers.set(HttpHeaders.contentTypeHeader, 'application/zip')
-      ..headers.set('Content-Disposition', 'attachment; filename="$save.zip"')
+      ..headers.set('Content-Disposition', 'attachment; filename="$zipName"')
       ..add(bytes);
     await request.response.close();
     await zipFile.delete();
