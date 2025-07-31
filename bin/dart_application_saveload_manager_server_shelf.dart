@@ -60,7 +60,7 @@ Future<Response> handleJsonRpc(Request request) async {
     final params = jsonData['params'] ?? [];
     final id = jsonData['id'];
     if (id is int) {
-      print('id: ${DateTime.fromMillisecondsSinceEpoch(id)}');
+      print('\nid: ${DateTime.fromMillisecondsSinceEpoch(id)}');
     } else {
       print('id: $id');
     }
@@ -70,7 +70,7 @@ Future<Response> handleJsonRpc(Request request) async {
       return _sendErrorResponse(-32600, 'Method is required', id);
     }
     final result = await _executeMethod(method, params);
-    print('result: $result\n');
+    print('result: $result');
     return _sendSuccessResponse(id, result);
   } catch (e) {
     return _sendErrorResponse(-32700, 'Parse error: $e', null);
@@ -188,6 +188,7 @@ Future<Response> handleDownload(Request request) async {
       'Content-Disposition': 'attachment; filename="$zipName"',
     };
     await zipFile.delete();
+    print('\nDownload the file: $zipName');
     return Response.ok(bytes, headers: headers);
   } catch (e) {
     return Response.internalServerError(body: 'Error: $e');
@@ -236,6 +237,7 @@ Future<Response> handleUpload(Request request) async {
         final targetPath = ['SaveLoad', game, profile].join(Platform.pathSeparator);
         save = await extractZip(zipPath, targetPath);
         await zipFile.delete();
+        print('\nUpload the file: $fileName');
       }
       return Response.ok(save);
     } else {

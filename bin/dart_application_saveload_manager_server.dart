@@ -181,7 +181,7 @@ Future<void> handleJsonrpc(HttpRequest request) async {
     final method = jsonData['method'] as String?;
     final params = jsonData['params'] ?? [];
     final id = jsonData['id'];
-    print('id: ${DateTime.fromMillisecondsSinceEpoch(id)}');
+    print('\nid: ${DateTime.fromMillisecondsSinceEpoch(id)}');
     print('method: $method');
     print('params: $params');
     if (method == null) {
@@ -189,7 +189,7 @@ Future<void> handleJsonrpc(HttpRequest request) async {
       return;
     }
     final result = await _executeMethod(method, params);
-    print('result: $result\n');
+    print('result: $result');
     sendSuccessResponse(request.response, id, result);
   } catch (e) {
     sendErrorResponse(request.response, -32700, 'Parse error: $e');
@@ -276,6 +276,7 @@ Future<void> handleDownload(HttpRequest request) async {
       ..add(bytes);
     await request.response.close();
     await zipFile.delete();
+    print('\nDownload the file: $zipName');
   } catch (e) {
     request.response
       ..statusCode = HttpStatus.internalServerError
@@ -301,17 +302,14 @@ Future<void> handleUpload(HttpRequest request) async {
           final match = RegExp(r'filename="([^"]+)"').firstMatch(contentDisposition);
           fileName = match != null ? match.group(1) : 'upload_${DateTime.now().millisecondsSinceEpoch}.zip';
           zipBytes = content;
-          // print('Received zip file, size: ${zipBytes.length}');
         } else if (contentDisposition.contains('name="params"')) {
           jsonString = utf8.decode(content);
-          // print('Received parameter: $jsonString');
         }
       }
       late String game;
       late String profile;
       if (jsonString != null) {
         final Map<String, dynamic> params = json.decode(jsonString);
-        // print('Parameter content: $params');
         game = params['game'];
         profile = params['profile'];
       }
@@ -324,7 +322,7 @@ Future<void> handleUpload(HttpRequest request) async {
         final targetPath = ['SaveLoad', game, profile].join(Platform.pathSeparator);
         save = await extractZip(zipPath, targetPath);
         await zipFile.delete();
-        // print('The file has been saved to: $zipPath');
+        print('\nUpload the file: $fileName');
       }
       request.response
         ..statusCode = HttpStatus.ok
