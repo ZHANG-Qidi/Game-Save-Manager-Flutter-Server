@@ -24,6 +24,15 @@ sudo pacman-key --populate
 sudo pacman -S screen
 # 验证安装是否成功
 screen --version
+
+# 合并命令
+sudo steamos-readonly disable && \
+    sudo pacman -Sy && \
+    sudo pacman-key --init && \
+    sudo pacman-key --populate && \
+    sudo pacman -S --noconfirm screen && \
+    screen --version && \
+    sudo steamos-readonly enable
 #+end_src
 * 在 Steam Deck 上设置自启动服务
 1. 用户级自启动服务
