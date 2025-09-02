@@ -183,9 +183,11 @@ Future<Response> handleDownload(Request request) async {
     await compressToZip(savePath, zipPath);
     final File zipFile = File(zipPath);
     final List<int> bytes = await zipFile.readAsBytes();
+    // Use RFC 5987 encoding
+    final encodedName = Uri.encodeComponent(zipName);
     final headers = {
       HttpHeaders.contentTypeHeader: 'application/zip',
-      'Content-Disposition': 'attachment; filename="$zipName"',
+      'Content-Disposition': 'attachment; filename*=UTF-8\'\'$encodedName',
     };
     await zipFile.delete();
     print('\nDownload the file: $zipName');

@@ -270,9 +270,11 @@ Future<void> handleDownload(HttpRequest request) async {
     await compressToZip(savePath, zipPath);
     final File zipFile = File(zipPath);
     final List<int> bytes = await zipFile.readAsBytes();
+    // Use RFC 5987 encoding
+    final encodedName = Uri.encodeComponent(zipName);
     request.response
       ..headers.set(HttpHeaders.contentTypeHeader, 'application/zip')
-      ..headers.set('Content-Disposition', 'attachment; filename="$zipName"')
+      ..headers.set('Content-Disposition', 'attachment; filename*=UTF-8\'\'$encodedName')
       ..add(bytes);
     await request.response.close();
     await zipFile.delete();
