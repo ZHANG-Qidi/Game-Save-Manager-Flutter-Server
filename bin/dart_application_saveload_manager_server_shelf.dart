@@ -49,6 +49,18 @@ Middleware corsMiddleware = (Handler handler) {
   };
 };
 
+Middleware noCacheForBootstrap() {
+  return (Handler inner) {
+    return (Request req) async {
+      final res = await inner(req);
+      if (req.url.path == 'flutter_bootstrap.js') {
+        return res.change(headers: {...res.headers, 'Cache-Control': 'no-cache, no-store, must-revalidate'});
+      }
+      return res;
+    };
+  };
+}
+
 Future<Response> handleJsonRpc(Request request) async {
   try {
     final content = await request.readAsString();
@@ -159,6 +171,7 @@ void main(List<String> args) async {
   // Configure a pipeline that logs requests.
   final pipeline = Pipeline()
       // .addMiddleware(corsMiddleware)
+      // .addMiddleware(noCacheForBootstrap())
       .addMiddleware(logRequests())
       // .addMiddleware(corsHeaders())
       .addHandler(handler);
@@ -187,7 +200,9 @@ Future<Response> handleDownload(Request request) async {
     final encodedName = Uri.encodeComponent(zipName);
     final headers = {
       HttpHeaders.contentTypeHeader: 'application/zip',
+      HttpHeaders.contentLengthHeader: bytes.length.toString(),
       'Content-Disposition': 'attachment; filename*=UTF-8\'\'$encodedName',
+      HttpHeaders.cacheControlHeader: 'no-cache',
     };
     await zipFile.delete();
     print('\nDownload the file: $zipName');

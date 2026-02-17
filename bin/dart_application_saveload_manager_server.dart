@@ -110,6 +110,9 @@ Future<void> serveStaticFile(HttpRequest request, String filename) async {
       request.response
         ..statusCode = HttpStatus.ok
         ..headers.contentType = contentType;
+      // if (filename == 'flutter_bootstrap.js') {
+      //   request.response.headers.set('Cache-Control', 'no-cache, no-store, must-revalidate');
+      // }
       var bytes = await file.readAsBytes();
       request.response.add(bytes);
       await request.response.close();
@@ -274,7 +277,9 @@ Future<void> handleDownload(HttpRequest request) async {
     final encodedName = Uri.encodeComponent(zipName);
     request.response
       ..headers.set(HttpHeaders.contentTypeHeader, 'application/zip')
+      ..headers.set(HttpHeaders.contentLengthHeader, bytes.length.toString())
       ..headers.set('Content-Disposition', 'attachment; filename*=UTF-8\'\'$encodedName')
+      ..headers.set(HttpHeaders.cacheControlHeader, 'no-cache')
       ..add(bytes);
     await request.response.close();
     await zipFile.delete();
