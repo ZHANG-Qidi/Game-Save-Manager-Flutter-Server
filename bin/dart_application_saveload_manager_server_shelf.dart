@@ -108,6 +108,15 @@ Future<dynamic> _executeMethod(String method, dynamic params) async {
       return await saveNew(game: params[0], profile: params[1], saveFolder: params[2], saveFile: params[3], comment: params[4]);
     case 'saveDelete':
       return await saveDelete(game: params[0], profile: params[1], saveFolder: params[2], saveFile: params[3], save: params[4]);
+    case 'saveRename':
+      return await saveRename(
+        game: params[0],
+        profile: params[1],
+        saveFolder: params[2],
+        saveFile: params[3],
+        save: params[4],
+        name: params[5],
+      );
     case 'saveLoad':
       return await saveLoad(game: params[0], profile: params[1], saveFolder: params[2], saveFile: params[3], save: params[4]);
     case 'pathSeparator':
