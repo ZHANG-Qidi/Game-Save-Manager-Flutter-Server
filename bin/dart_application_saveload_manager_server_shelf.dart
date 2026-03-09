@@ -7,6 +7,73 @@ import 'package:shelf_static/shelf_static.dart';
 import 'package:mime/mime.dart';
 import 'package:http_parser/http_parser.dart';
 import 'saveload_core.dart';
+import 'package:mdns_dart/mdns_dart.dart';
+import 'dart:async';
+
+Future<bool> isIpReachable(InternetAddress ip) async {
+  final isLanIp =
+      ip.address.contains(RegExp(r'^192\.168\.(?!137\.|56\.)\d+\.\d+$')) ||
+      ip.address.contains(RegExp(r'^10\.\d+\.\d+\.\d+$')) ||
+      ip.address.contains(RegExp(r'^172\.(1[6-9]|2\d|3[0-1])\.\d+\.\d+$'));
+  if (!isLanIp) return false;
+  ServerSocket? serverSocket;
+  try {
+    serverSocket = await ServerSocket.bind(ip, 9090, shared: true);
+    return true;
+  } catch (e) {
+    if (e.toString().contains('address already in use')) {
+      return true;
+    }
+    return false;
+  } finally {
+    serverSocket?.close();
+  }
+}
+
+Future<List<MDNSServer>> startMDNSServer(int port) async {
+  print('Starting mDNS server...');
+  final interfaces = await NetworkInterface.list();
+  List<InternetAddress> localIPs = [];
+  final excludeInterfaceNames = ['docker', 'veth', 'vmware', 'hyper-v', 'bluetooth', 'tun', 'tap', 'loopback'];
+  for (final interface in interfaces) {
+    if (excludeInterfaceNames.any((name) => interface.name.toLowerCase().contains(name))) continue;
+    for (final addr in interface.addresses) {
+      if (addr.type == InternetAddressType.IPv4 && !addr.isLoopback) {
+        if (await isIpReachable(addr)) {
+          localIPs.add(addr);
+          print('✅ Found valid IP: ${addr.address} (interface: ${interface.name})');
+        } else {
+          print('❌ Skip unreachable IP: ${addr.address} (interface: ${interface.name})');
+        }
+      }
+    }
+  }
+  if (localIPs.isEmpty) {
+    print('❌ Could not find any valid network interface (IPv4, non-loopback, reachable)');
+    return [];
+  }
+  List<MDNSServer> mDNSservers = [];
+  for (final ip in localIPs) {
+    final instanceName = 'Dart Test Server [${ip.address}]';
+    try {
+      final service = await MDNSService.create(
+        instance: instanceName,
+        service: '_http._tcp',
+        port: port,
+        ips: [ip],
+        txt: ['path=/api', 'interface=${ip.address}'],
+      );
+      final mDNSserver = MDNSServer(MDNSServerConfig(zone: service));
+      await mDNSserver.start();
+      mDNSservers.add(mDNSserver);
+      print('📌 mDNS Service: $instanceName bound to IP: ${ip.address} (port: ${service.port})');
+    } catch (e) {
+      print('❌ Failed to create service for ${ip.address}: $e');
+    }
+  }
+  print('✅ All mDNS servers started!');
+  return mDNSservers;
+}
 
 const staticFilesDir = 'web';
 final staticHandler = createStaticHandler(staticFilesDir, defaultDocument: 'index.html', serveFilesOutsidePath: false);
@@ -43,7 +110,6 @@ Middleware corsMiddleware = (Handler handler) {
     if (request.method == 'OPTIONS') {
       return Response(HttpStatus.noContent, headers: corsHeadersRule);
     }
-
     final response = await handler(request);
     return response.change(headers: {...response.headers, ...corsHeadersRule});
   };
@@ -131,6 +197,16 @@ Future<dynamic> _executeMethod(String method, dynamic params) async {
       return await getRootDirectory();
     case 'gameNew':
       return await gameNew(game: params[0], saveFolder: params[1], saveFile: params[2]);
+    case 'listMdnsServer':
+      return await listMdnsServer();
+    case 'syncSaveToReceiver':
+      return await syncSaveToReceiver(
+        game: params[0],
+        profile: params[1],
+        save: params[2],
+        url: params[3],
+        port: params[4].toString(),
+      );
     default:
       throw UnsupportedError('Function $method is not supported');
   }
@@ -173,22 +249,53 @@ Future<void> infoPrint(HttpServer server) async {
   }
 }
 
+Future<void> stopAllServices(HttpServer shelfServer, List<MDNSServer> mdnsServers) async {
+  print('\n=== Stopping Services ===');
+  await shelfServer.close(force: true);
+  print('🛑 Shelf server stopped');
+  for (final server in mdnsServers) {
+    try {
+      await server.stop();
+    } catch (e) {
+      print('⚠️ Failed to stop mDNS server: $e');
+    }
+  }
+  print('🛑 All mDNS servers stopped');
+  exit(0);
+}
+
 void main(List<String> args) async {
-  // Use any available host or container IP (usually `0.0.0.0`).
-  final ip = InternetAddress.anyIPv4;
-  final handler = Cascade().add(staticHandler).add(_router.call).handler;
-  // Configure a pipeline that logs requests.
-  final pipeline = Pipeline()
-      // .addMiddleware(corsMiddleware)
-      // .addMiddleware(noCacheForBootstrap())
-      .addMiddleware(logRequests())
-      // .addMiddleware(corsHeaders())
-      .addHandler(handler);
-  // For running in containers, we respect the PORT environment variable.
-  final port = int.parse(Platform.environment['PORT'] ?? '8000');
-  final server = await serve(pipeline, ip, port);
-  print('Server listening on port ${server.port}');
-  infoPrint(server);
+  try {
+    // Use any available host or container IP (usually `0.0.0.0`).
+    final ip = InternetAddress.anyIPv4;
+    final handler = Cascade().add(staticHandler).add(_router.call).handler;
+    // Configure a pipeline that logs requests.
+    final pipeline = Pipeline()
+        // .addMiddleware(corsMiddleware)
+        // .addMiddleware(noCacheForBootstrap())
+        .addMiddleware(logRequests())
+        // .addMiddleware(corsHeaders())
+        .addHandler(handler);
+    // For running in containers, we respect the PORT environment variable.
+    final port = int.parse(Platform.environment['PORT'] ?? '8000');
+    final shelfServer = await serve(pipeline, ip, port);
+    print('Server listening on port ${shelfServer.port}');
+    await infoPrint(shelfServer);
+    final mdnsServers = await startMDNSServer(port);
+    ProcessSignal.sigint.watch().listen((_) async {
+      await stopAllServices(shelfServer, mdnsServers);
+    });
+    if (!Platform.isWindows) {
+      ProcessSignal.sigterm.watch().listen((_) async {
+        await stopAllServices(shelfServer, mdnsServers);
+      });
+    }
+    print('✅ All services running! Press Ctrl+C to stop.');
+    await Completer<void>().future;
+  } catch (e) {
+    print('❌ Server startup failed: $e');
+    exit(1);
+  }
 }
 
 Future<Response> handleDownload(Request request) async {

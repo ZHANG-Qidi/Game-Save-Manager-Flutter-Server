@@ -9,9 +9,11 @@ environment:
 # Add regular dependencies here.
 dependencies:
   archive: ^4.0.7
+  http: ^1.6.0
   http_parser: ^4.1.2
   ini: ^2.1.0
   intl: ^0.20.2
+  mdns_dart: ^2.2.1
   mime: ^2.0.0
   path: ^1.9.1
   shelf: ^1.4.0
