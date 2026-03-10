@@ -1,4 +1,4 @@
-import 'saveload_core.dart';
+import 'saveload_core_server.dart';
 
 String mirrorPath(String path) {
   return path.split(pathSeparator).reversed.join(pathSeparator);

@@ -23,11 +23,10 @@ migrate_working_dir/
 # is commented out by default.
 #.vscode/
 
+/*.exe
 .dart_tool/
 dart_application_saveload_manager_server
-dart_application_saveload_manager_server.exe
 /bin/dart_application_saveload_manager_server
-/bin/dart_application_saveload_manager_server.exe
 /build/
 /SaveLoad/
 /web/
