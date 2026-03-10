@@ -689,39 +689,6 @@ String _getFileName(String path) {
   return path.split(Platform.pathSeparator).last;
 }
 
-// Future<String> saveDownload({required String game, required String profile, required String save}) async {
-//   try {
-//     final savePath = ['SaveLoad', game, profile, save].join(Platform.pathSeparator);
-//     final targetPath = [game, profile, '$save.zip'].join('_');
-//     await compressToZip(savePath, targetPath);
-//     return 'OK';
-//   } catch (e) {
-//     throw Exception('Save download error with: $e');
-//   }
-// }
-
-// Future<String> saveUpload({required String game, required String profile}) async {
-//   try {
-//     final XFile? zipFile = await openFile(
-//       acceptedTypeGroups: [
-//         XTypeGroup(label: 'ZIP Archive', extensions: ['zip']),
-//       ],
-//     );
-//     if (zipFile != null) {
-//       final sourcePath = zipFile.path;
-//       final targetPath = ['SaveLoad', game, profile].join(Platform.pathSeparator);
-//       final save = await extractZip(sourcePath, targetPath);
-//       // print('Selected file:  ${zipFile.path}');
-//       return save;
-//     } else {
-//       // print('No files selected');
-//       return 'NG';
-//     }
-//   } catch (e) {
-//     throw Exception('Save upload error with: $e');
-//   }
-// }
-
 Future<bool> isIpReachable(InternetAddress ip) async {
   final isLanIp =
       ip.address.contains(RegExp(r'^192\.168\.(?!137\.|56\.)\d+\.\d+$')) ||
