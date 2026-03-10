@@ -117,7 +117,6 @@ void main(List<String> args) async {
     // For running in containers, we respect the PORT environment variable.
     final port = int.parse(Platform.environment['PORT'] ?? '8000');
     final server = await serve(pipeline, ip, port);
-    print('Server listening on port ${server.port}');
     await infoPrint(server);
     final mdnsServers = await startMdnsServer(port);
     ProcessSignal.sigint.watch().listen((_) async {

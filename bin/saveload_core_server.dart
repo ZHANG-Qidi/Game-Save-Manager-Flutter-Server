@@ -733,14 +733,14 @@ Future<List<MDNSServer>> startMdnsServer(int port) async {
   }
   List<MDNSServer> listMdnsServer = [];
   for (final ip in localIPs) {
-    final instanceName = 'Dart Test Server [${ip.address}]';
+    final instanceName = 'Dart Http Server [${ip.address}]';
     try {
       final service = await MDNSService.create(
         instance: instanceName,
         service: '_http._tcp',
         port: port,
         ips: [ip],
-        txt: ['path=/api', 'interface=${ip.address}'],
+        txt: ['jsonrpc=/jsonrpc', 'interface=${ip.address}'],
       );
       final mDnsServer = MDNSServer(MDNSServerConfig(zone: service));
       await mDnsServer.start();
