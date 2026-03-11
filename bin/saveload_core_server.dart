@@ -31,54 +31,83 @@ Future<void> infoPrint(HttpServer server) async {
   }
 }
 
-Future<dynamic> executeMethod(String method, dynamic params) async {
-  switch (method) {
-    case 'gameListFunc':
-      return await gameListFunc();
-    case 'profileListFunc':
-      final (profileList, folder, file) = await profileListFunc(params[0]);
-      return [profileList, folder, file];
-    case 'saveListFunc':
-      return await saveListFunc(game: params[0], profile: params[1]);
-    case 'gameDelete':
-      return await gameDelete(params[0]);
-    case 'profileNew':
-      return await profileNew(game: params[0], profile: params[1]);
-    case 'profileDelete':
-      return await profileDelete(game: params[0], profile: params[1]);
-    case 'saveNew':
-      return await saveNew(game: params[0], profile: params[1], saveFolder: params[2], saveFile: params[3], comment: params[4]);
-    case 'saveDelete':
-      return await saveDelete(game: params[0], profile: params[1], saveFolder: params[2], saveFile: params[3], save: params[4]);
-    case 'saveRename':
-      return await saveRename(
-        game: params[0],
-        profile: params[1],
-        saveFolder: params[2],
-        saveFile: params[3],
-        save: params[4],
-        name: params[5],
-      );
-    case 'saveLoad':
-      return await saveLoad(game: params[0], profile: params[1], saveFolder: params[2], saveFile: params[3], save: params[4]);
-    case 'pathSeparator':
-      return Platform.pathSeparator;
-    case 'listDirectoryFilesNames':
-      return await listDirectoryFilesNames(params[0]);
-    case 'listDirectorySubDirectoriesNames':
-      return await listDirectorySubDirectoriesNames(params[0]);
-    case 'getAppDataPath':
-      return await getAppDataPath();
-    case 'getRootDirectory':
-      return await getRootDirectory();
-    case 'gameNew':
-      return await gameNew(game: params[0], saveFolder: params[1], saveFile: params[2]);
-    case 'funcListMdnsServer':
-      return await funcListMdnsServer();
-    case 'handleSync':
-      return await handleSync(game: params[0], profile: params[1], save: params[2], url: params[3], port: params[4].toString());
-    default:
-      throw UnsupportedError('Function $method is not supported');
+Future<dynamic> executeMethod(String method, List<dynamic> params) async {
+  try {
+    final List<String> paramsString = params.map((e) => e.toString()).toList();
+    switch (method) {
+      case 'gameListFunc':
+        return await gameListFunc();
+      case 'profileListFunc':
+        final (profileList, folder, file) = await profileListFunc(paramsString[0]);
+        return [profileList, folder, file];
+      case 'saveListFunc':
+        return await saveListFunc(game: paramsString[0], profile: paramsString[1]);
+      case 'gameDelete':
+        return await gameDelete(paramsString[0]);
+      case 'profileNew':
+        return await profileNew(game: paramsString[0], profile: paramsString[1]);
+      case 'profileDelete':
+        return await profileDelete(game: paramsString[0], profile: paramsString[1]);
+      case 'saveNew':
+        return await saveNew(
+          game: paramsString[0],
+          profile: paramsString[1],
+          saveFolder: paramsString[2],
+          saveFile: paramsString[3],
+          comment: paramsString[4],
+        );
+      case 'saveDelete':
+        return await saveDelete(
+          game: paramsString[0],
+          profile: paramsString[1],
+          saveFolder: paramsString[2],
+          saveFile: paramsString[3],
+          save: paramsString[4],
+        );
+      case 'saveRename':
+        return await saveRename(
+          game: paramsString[0],
+          profile: paramsString[1],
+          saveFolder: paramsString[2],
+          saveFile: paramsString[3],
+          save: paramsString[4],
+          name: paramsString[5],
+        );
+      case 'saveLoad':
+        return await saveLoad(
+          game: paramsString[0],
+          profile: paramsString[1],
+          saveFolder: paramsString[2],
+          saveFile: paramsString[3],
+          save: paramsString[4],
+        );
+      case 'pathSeparator':
+        return Platform.pathSeparator;
+      case 'listDirectoryFilesNames':
+        return await listDirectoryFilesNames(paramsString[0]);
+      case 'listDirectorySubDirectoriesNames':
+        return await listDirectorySubDirectoriesNames(paramsString[0]);
+      case 'getAppDataPath':
+        return await getAppDataPath();
+      case 'getRootDirectory':
+        return await getRootDirectory();
+      case 'gameNew':
+        return await gameNew(game: paramsString[0], saveFolder: paramsString[1], saveFile: paramsString[2]);
+      case 'funcListMdnsServer':
+        return await funcListMdnsServer();
+      case 'handleSync':
+        return await handleSync(
+          game: paramsString[0],
+          profile: paramsString[1],
+          save: paramsString[2],
+          url: paramsString[3],
+          port: paramsString[4],
+        );
+      default:
+        throw UnsupportedError('Function $method is not supported');
+    }
+  } catch (e) {
+    throw Exception('Json RPC execute error, function: $method, error: $e');
   }
 }
 

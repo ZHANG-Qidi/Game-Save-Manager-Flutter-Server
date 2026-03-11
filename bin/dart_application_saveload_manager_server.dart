@@ -176,7 +176,7 @@ Future<void> handleJsonrpc(HttpRequest request) async {
       return;
     }
     final method = jsonData['method'] as String?;
-    final params = jsonData['params'] ?? [];
+    final List<dynamic> params = jsonData['params'] ?? [];
     final id = jsonData['id'];
     print('\nid: ${DateTime.fromMillisecondsSinceEpoch(id)}');
     print('method: $method');

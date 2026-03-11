@@ -70,7 +70,7 @@ Future<Response> handleJsonRpc(Request request) async {
       return _sendErrorResponse(-32600, 'Invalid Request', jsonData['id']);
     }
     final method = jsonData['method'] as String?;
-    final params = jsonData['params'] ?? [];
+    final List<dynamic> params = jsonData['params'] ?? [];
     final id = jsonData['id'];
     if (id is int) {
       print('\nid: ${DateTime.fromMillisecondsSinceEpoch(id)}');
